@@ -1,8 +1,7 @@
 """Module de configuration et structures de données (contrats d'interfaces).
 
 Ce module définit l'ensemble des structures de données typées (`dataclass`)
-partagées entre les différents maillons de la chaîne de traitement (physique,
-traitement du signal, détection synchrone, analyse Kramers-Kronig et I/O).
+partagées entre les différents maillons de la chaîne de traitement.
 """
 
 from dataclasses import dataclass
