@@ -102,7 +102,7 @@ class TestGenerateTimeResponse(unittest.TestCase):
         self.assertEqual(len(data.v_out_clean), expected_samples)
 
     def test_shannon_validation(self) -> None:
-        """Vérifie le rejet d'une fréquence d'échantillonnage sous le seuil de Shannon."""
+        """Vérifie le rejet d'une fréquence d'échantillonnage sous la frequence de Shannon."""
         with self.assertRaises(ValueError):
             generate_time_response(self.cfg, f_ref=1000.0, fs=1500.0)
 
