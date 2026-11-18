@@ -2,3 +2,7 @@ venv
 test_script.py
 simu_lockin_kk.egg-info
 tests/__pycache__
+src/simu_lockin_kk/analysis/__pycache__
+src/simu_lockin_kk/signal/__pycache__
+src/simu_lockin_kk/__pycache__
+src/simu_lockin_kk/physics/__pycache__
