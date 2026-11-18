@@ -47,6 +47,7 @@ def _apply_lpf(
     float
         Valeur continue moyenne mesurée (composante X ou Y).
     """
+    cutoff = min(cutoff, 0.1 * f_ref)
     n_total = len(signal)
     period_samples = int(np.round(fs / f_ref))
 
