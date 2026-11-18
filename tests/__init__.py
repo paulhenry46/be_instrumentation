@@ -1,0 +1,1 @@
+"""Suite de tests automatisés pour le projet simu_lockin_kk."""
