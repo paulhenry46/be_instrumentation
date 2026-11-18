@@ -15,7 +15,7 @@ import numpy as np
 from simu_lockin_kk.config import KKResult, SpectrumData, TimeDomainData
 
 # Backend non-interactif par sécurité
-matplotlib.use("Agg")
+#matplotlib.use("Agg")
 
 def plot_time_domain(
     time_data: TimeDomainData,
