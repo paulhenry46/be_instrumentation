@@ -20,7 +20,7 @@ from simu_lockin_kk.config import KKConfig, KKResult, SpectrumData  # Paramètre
 def _interpolate_uniform_fft_grid(
     omega: np.ndarray,
     chi: np.ndarray,
-    gamma: int = 10,
+    gamma: int = 14,
 ) -> tuple[np.ndarray, np.ndarray]:
     """Interpole un spectre sur une grille linéaire uniforme de taille N = 2**gamma."""
     # Vérifie que gamma est strictement positif pour éviter une taille de grille nulle ou négative.
@@ -36,6 +36,13 @@ def _interpolate_uniform_fft_grid(
     w_src = w_src[order]
     chi_src = chi_src[order]
 
+    # le balayage fréquentiel commence à  omega>0, donc w_src[0] est strictement positif. 
+    # on ajoute artificiellement un point de départ à $\omega = 0$ avec la même valeur que le premier point mesuré afin
+    # d' éviter que la courbe commence à `0.0` sur la grille linéaire avant w_src[0], ce qui créait une marche au démarrage.
+    if w_src[0] > 0.0:
+        w_src = np.concatenate([[0.0], w_src])
+        chi_src = np.concatenate([[chi_src[0]], chi_src])
+
     # Calcule N = 2^gamma par décalage de bits (1 << gamma), conformément à l'article.
     n_points = 2 ** gamma # on aurait pu également utiliser 1 << gamma si on voulait un code plus performant ^^
 
@@ -48,11 +55,11 @@ def _interpolate_uniform_fft_grid(
 
     # Ajuste une spline cubique sur les données connues sans extrapoler hors bornes avec extrapolate=False.
     cs = CubicSpline(w_src, chi_src, extrapolate=False)
-
-    # Initialise le tableau interpolé à zéro et n'évalue la spline que dans [w_src[0], w_src[-1]].
-    chi_interp = np.zeros(n_points, dtype=np.float64)
-    in_bounds = (omega_grid >= w_src[0]) & (omega_grid <= w_src[-1])
-    chi_interp[in_bounds] = cs(omega_grid[in_bounds])
+    #np.clip borne les valeurs de omega_gid à l’intervalle [w_src[0], w_src[-1]] 
+    # avant d’appeler la spline cubique `cs(...)`.
+    # comme on a déjà ajouté `0.0` au début de `w_src`, `w_src[0]` vaut `0.0` 
+    # np.clip produit directement un tableau de taille `n_points`.
+    chi_interp = cs(np.clip(omega_grid, w_src[0], w_src[-1]))
 
     return omega_grid, chi_interp
 
@@ -64,7 +71,7 @@ def _reconstruct_bruzzoni_fft(
     omega: np.ndarray,
     chi: np.ndarray,
     target: Literal["real", "imag"],
-    gamma: int = 10,
+    gamma: int = 14,
 ) -> np.ndarray:
     """Reconstruit la composante conjuguée ('real' ou 'imag') selon Bruzzoni et al. (2002)."""
     # Convertit les entrées en float64.
@@ -106,11 +113,15 @@ def _reconstruct_bruzzoni_fft(
     # pi * N = (2 * pi) * (N / 2) pour retrouver le facteur d'échelle 2*pi*(N/2) de l'article).
     # conv_result = np.real(np.fft.ifft(modified_fft)) * (np.pi * n_points)
     conv_result = np.real(np.fft.ifft(modified_fft)) * (np.pi)
-    # Ré-interpole sur les pulsations `w_eval` d'origine (en restant dans la plage de la grille).
-    reconstructed = np.interp(w_eval, omega_grid, conv_result)
-    return reconstructed
 
+    # Corrige l'artefact de repliement périodique sur les tout derniers échantillons de la grille.
+    # on duplique conv_result pour ne pas modifier l’original, 
+    # puis on écrase les deux derniers échantillons [-2:] par la valeur de l’avant-avant-dernier [-3] avant de ré-interpoler sur `w_eval`.
+    # sur la grille FFT, le tout dernier point conv_result[-1] présente une valeur aberarnte (repliement de  FFT ?).
+    conv_clean = conv_result.copy()
+    conv_clean[-2:] = conv_clean[-3]
 
+    return np.interp(w_eval, omega_grid, conv_clean)
 # Rôle : prolonge la courbe (omega, chi) avant w_min et après w_max.
 # Retour : (w_full, chi_full) étendus.
 # Pourquoi : éviter l'effet de coupure brut d'une intégrale définie sur un domaine plus large.
