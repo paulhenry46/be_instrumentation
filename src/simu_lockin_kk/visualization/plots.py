@@ -449,3 +449,88 @@ def plot_extrapolated_points(
         plt.show()
 
     return fig
+
+
+from simu_lockin_kk.analysis.kramers_kronig import analyze_kramers_kronig
+from simu_lockin_kk.config import KKConfig, KKResult, SpectrumData
+
+
+# Rôle : compare deux méthodes de reconstruction KK sur un même spectre (courbes + résidus).
+# Retour : objet Figure matplotlib.
+# Pourquoi : prouver et illustrer visuellement l'accord et les différences entre deux algorithmes KK.
+def plot_methods_comparison(
+    data: SpectrumData | tuple[np.ndarray, np.ndarray, np.ndarray],
+    cfg_a: KKConfig,
+    cfg_b: KKConfig,
+    label_a: str = "Méthode A",
+    label_b: str = "Méthode B",
+    target: Literal["real", "imag"] = "real",
+    use_omega: bool = True,
+    save_path: str | Path | None = None,
+    show: bool = False,
+) -> Figure:
+    """Compare deux méthodes d'intégration Kramers-Kronig sur un même jeu de données."""
+    # Calcule les résultats KK pour chacune des deux configurations sur les mêmes données.
+    res_a: KKResult = analyze_kramers_kronig(data, target=target, kk_cfg=cfg_a)
+    res_b: KKResult = analyze_kramers_kronig(data, target=target, kk_cfg=cfg_b)
+
+    # Choisit l'axe des abscisses en pulsation omega (rad/s) ou fréquence f (Hz).
+    x_data = res_a.omega if use_omega else res_a.omega / (2.0 * np.pi)
+    x_label = "Pulsation ω (rad/s)" if use_omega else "Fréquence f (Hz)"
+    target_name = "Partie Réelle χ' (X)" if target == "real" else "Partie Imaginaire χ'' (Y)"
+
+    # Deux sous-graphiques alignés sur l'axe X : superposition en haut (75%), résidus en bas (25%).
+    fig, (ax_main, ax_res) = plt.subplots(
+        2, 1, figsize=(9, 7), sharex=True, gridspec_kw={"height_ratios": [3, 1]}, dpi=150
+    )
+
+    # Données de référence (mesure/simulation originale) en points discrets.
+    ax_main.semilogx(x_data, res_a.chi_original, "o", color="#1f77b4", markersize=4, label="Original / Lock-in")
+
+    # Reconstruction par la méthode A (trait plein).
+    ax_main.semilogx(
+        x_data,
+        res_a.chi_reconstructed,
+        "-",
+        color="#d62728",
+        linewidth=2.0,
+        label=f"{label_a} (RMS={res_a.rms_error:.3e}, R²={res_a.r2_score:.4f})",
+    )
+
+    # Reconstruction par la méthode B (trait interrompu pour rester lisible en superposition).
+    ax_main.semilogx(
+        x_data,
+        res_b.chi_reconstructed,
+        "--",
+        color="#2ca02c",
+        linewidth=2.0,
+        label=f"{label_b} (RMS={res_b.rms_error:.3e}, R²={res_b.r2_score:.4f})",
+    )
+
+    ax_main.set_ylabel(target_name, fontsize=11)
+    ax_main.set_title(
+        f"Comparaison de deux méthodes KK ({label_a} vs {label_b}) - {target_name}",
+        fontsize=12,
+        fontweight="bold",
+    )
+    ax_main.grid(True, which="both", linestyle=":", alpha=0.7)
+    ax_main.legend(loc="best", framealpha=0.9)
+
+    # Résidus = Original - Reconstruit pour comparer les écarts locaux de chaque méthode.
+    ax_res.semilogx(x_data, res_a.residuals, "-", color="#d62728", linewidth=1.4, label=f"Résidus {label_a}")
+    ax_res.semilogx(x_data, res_b.residuals, "--", color="#2ca02c", linewidth=1.4, label=f"Résidus {label_b}")
+    ax_res.axhline(0.0, color="black", linestyle=":", alpha=0.7)
+    ax_res.set_xlabel(x_label, fontsize=11)
+    ax_res.set_ylabel("Résidus Δ", fontsize=11)
+    ax_res.grid(True, which="both", linestyle=":", alpha=0.7)
+    ax_res.legend(loc="best")
+
+    plt.tight_layout()
+
+    if save_path is not None:
+        fig.savefig(save_path, dpi=200, bbox_inches="tight")
+
+    if show:
+        plt.show()
+
+    return fig
