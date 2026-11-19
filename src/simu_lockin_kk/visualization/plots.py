@@ -233,3 +233,219 @@ def plot_kramers_kronig_comparison(
         plt.show()
 
     return fig
+
+
+from typing import Literal
+from simu_lockin_kk.config import KKConfig, KKResult, SpectrumData
+from simu_lockin_kk.analysis.kramers_kronig import analyze_kramers_kronig
+
+
+# Rôle : trace la reconstruction KK avec extrapolation vs sans extrapolation face à l'original.
+# Retour : objet Figure matplotlib.
+# Pourquoi : visualiser l'impact de l'extrapolation sur les effets de bord et la précision (RMS, R²).
+def plot_extrapolation_comparison(
+    source: SpectrumData | tuple[np.ndarray, np.ndarray, np.ndarray] | tuple[KKResult, KKResult],
+    target: Literal["real", "imag"] = "real",
+    kk_cfg: KKConfig | None = None,
+    use_omega: bool = True,
+    save_path: str | Path | None = None,
+    show: bool = False,
+) -> Figure:
+    """Compare la reconstruction Kramers-Kronig avec et sans extrapolation.
+
+    Parameters
+    ----------
+    source : SpectrumData | tuple[np.ndarray, np.ndarray, np.ndarray] | tuple[KKResult, KKResult]
+        Données spectrales (SpectrumData ou (omega, X, Y)) ou couple (res_avec_extrap, res_sans_extrap).
+    target : Literal["real", "imag"], optional
+        Composante reconstruite ("real" ou "imag"), utilisé si source fournit les données brutes.
+    kk_cfg : KKConfig | None, optional
+        Configuration KK (la méthode d'extrapolation choisie sera comparée à "none").
+    use_omega : bool, optional
+        Si True, axe X en rad/s ; sinon en Hz.
+    save_path : str | Path | None, optional
+        Chemin de sauvegarde optionnel.
+    show : bool, optional
+        Si True, affiche la figure.
+
+    Returns
+    -------
+    Figure
+        Objet Figure matplotlib généré.
+    """
+    # Cas 1 : l'utilisateur fournit directement deux objets KKResult (avec extrap, sans extrap).
+    if (
+        isinstance(source, tuple)
+        and len(source) == 2
+        and isinstance(source[0], KKResult)
+        and isinstance(source[1], KKResult)
+    ):
+        res_extrap, res_no_extrap = source
+        omega = res_extrap.omega
+        chi_orig = res_extrap.chi_original
+        chi_extrap = res_extrap.chi_reconstructed
+        chi_no_extrap = res_no_extrap.chi_reconstructed
+        target_name = (
+            "Partie Réelle χ' (X)" if res_extrap.target_component == "real" else "Partie Imaginaire χ'' (Y)"
+        )
+    else:
+        # Cas 2 : on calcule les deux analyses à partir de SpectrumData ou (omega, X, Y).
+        base_cfg = kk_cfg or KKConfig()
+        extrap_mode = base_cfg.extrapolation if base_cfg.extrapolation != "none" else "asymptotic"
+
+        cfg_extrap = KKConfig(
+            integration_method=base_cfg.integration_method,
+            extrapolation=extrap_mode,
+            singularity_eps=base_cfg.singularity_eps,
+        )
+        cfg_no_extrap = KKConfig(
+            integration_method=base_cfg.integration_method,
+            extrapolation="none",
+            singularity_eps=base_cfg.singularity_eps,
+        )
+
+        res_extrap = analyze_kramers_kronig(source, target=target, kk_cfg=cfg_extrap)
+        res_no_extrap = analyze_kramers_kronig(source, target=target, kk_cfg=cfg_no_extrap)
+
+        omega = res_extrap.omega
+        chi_orig = res_extrap.chi_original
+        chi_extrap = res_extrap.chi_reconstructed
+        chi_no_extrap = res_no_extrap.chi_reconstructed
+        target_name = "Partie Réelle χ' (X)" if target == "real" else "Partie Imaginaire χ'' (Y)"
+
+    # Convertit l'axe des abscisses en rad/s ou en Hz selon use_omega.
+    x_data = omega if use_omega else omega / (2.0 * np.pi)
+    x_label = "Pulsation ω (rad/s)" if use_omega else "Fréquence f (Hz)"
+
+    # Crée deux sous-graphiques alignés sur l'axe X : courbes en haut, écarts à l'original en bas.
+    fig, (ax_main, ax_err) = plt.subplots(
+        2, 1, figsize=(9, 7), sharex=True, gridspec_kw={"height_ratios": [3, 1]}, dpi=150
+    )
+
+    # Courbe de référence (données originales) en points discrets.
+    ax_main.semilogx(x_data, chi_orig, "o", color="#1f77b4", markersize=4, label="Original")
+
+    # Reconstruction avec extrapolation.
+    ax_main.semilogx(
+        x_data,
+        chi_extrap,
+        "-",
+        color="#2ca02c",
+        linewidth=2.0,
+        label=f"Avec extrapolation (RMS={res_extrap.rms_error:.3e}, R²={res_extrap.r2_score:.4f})",
+    )
+
+    # Reconstruction sans extrapolation (en pointillés pour bien distinguer les deux courbes).
+    ax_main.semilogx(
+        x_data,
+        chi_no_extrap,
+        "--",
+        color="#d62728",
+        linewidth=1.8,
+        label=f"Sans extrapolation (RMS={res_no_extrap.rms_error:.3e}, R²={res_no_extrap.r2_score:.4f})",
+    )
+
+    ax_main.set_ylabel(target_name, fontsize=11)
+    ax_main.set_title(
+        f"Effet de l'extrapolation sur Kramers-Kronig - {target_name}",
+        fontsize=12,
+        fontweight="bold",
+    )
+    ax_main.grid(True, which="both", linestyle=":", alpha=0.7)
+    ax_main.legend(loc="best", framealpha=0.9)
+
+    # Sous-graphique inférieur : compare les résidus (Original - Reconstruit) des deux approches.
+    ax_err.semilogx(x_data, res_extrap.residuals, "-", color="#2ca02c", linewidth=1.5, label="Résidus (avec extrap)")
+    ax_err.semilogx(
+        x_data, res_no_extrap.residuals, "--", color="#d62728", linewidth=1.5, label="Résidus (sans extrap)"
+    )
+    ax_err.axhline(0.0, color="black", linestyle=":", alpha=0.7)
+    ax_err.set_xlabel(x_label, fontsize=11)
+    ax_err.set_ylabel("Résidus Δ", fontsize=11)
+    ax_err.grid(True, which="both", linestyle=":", alpha=0.7)
+    ax_err.legend(loc="best")
+
+    plt.tight_layout()
+
+    if save_path is not None:
+        fig.savefig(save_path, dpi=200, bbox_inches="tight")
+
+    if show:
+        plt.show()
+
+    return fig
+
+
+
+
+from simu_lockin_kk.config import KKConfig, SpectrumData
+from simu_lockin_kk.analysis.kramers_kronig import _extrapolate_spectrum
+
+
+# Rôle : trace les points originaux et les points ajoutés par _extrapolate_spectrum.
+# Retour : objet Figure matplotlib.
+# Pourquoi : vérifier visuellement le raccordement des extrapolations basse et haute fréquence.
+def plot_extrapolated_points(
+    data: SpectrumData | tuple[np.ndarray, np.ndarray, np.ndarray],
+    component: str = "imag",
+    kk_cfg: KKConfig | None = None,
+    use_omega: bool = True,
+    save_path: str | None = None,
+    show: bool = False,
+) -> Figure:
+    """Affiche les points spectraux d'origine et les points ajoutés par extrapolation."""
+    cfg = kk_cfg or KKConfig()
+
+    # Récupère omega et la composante choisie ("real" => X, "imag" => Y).
+    if isinstance(data, SpectrumData):
+        omega = np.asarray(data.omega, dtype=np.float64)
+        chi = np.asarray(data.X if component == "real" else data.Y, dtype=np.float64)
+    else:
+        omega, chi_real, chi_imag = data
+        omega = np.asarray(omega, dtype=np.float64)
+        chi = np.asarray(chi_real if component == "real" else chi_imag, dtype=np.float64)
+
+    # Calcule le spectre complet (points originaux + points extrapolés).
+    w_full, chi_full = _extrapolate_spectrum(omega, chi, extrap_type=cfg.extrapolation)
+
+    # Masques pour séparer les points extrapolés des points d'origine.
+    n_orig = len(omega)
+    n_added_low = int(np.sum(w_full < omega[0]))
+    n_added_high = len(w_full) - n_added_low - n_orig
+
+    low_w, low_chi = w_full[:n_added_low], chi_full[:n_added_low]
+    high_w, high_chi = w_full[n_added_low + n_orig :], chi_full[n_added_low + n_orig :]
+
+    # Conversion optionnelle de la pulsation omega (rad/s) en fréquence (Hz).
+    scale_x = 1.0 if use_omega else (1.0 / (2.0 * np.pi))
+    x_label = "Pulsation ω (rad/s)" if use_omega else "Fréquence f (Hz)"
+    comp_label = "Partie réelle χ' (X)" if component == "real" else "Partie imaginaire χ'' (Y)"
+
+    fig, ax = plt.subplots(figsize=(9, 5), dpi=150)
+
+    # Courbe continue globale pour voir la continuité du raccordement.
+    ax.semilogx(w_full * scale_x, chi_full, "-", color="#888888", alpha=0.5, linewidth=1.2, label="Profil extrapolé total")
+
+    # Points extrapolés basse et haute fréquence.
+    if len(low_w) > 0:
+        ax.semilogx(low_w * scale_x, low_chi, "x", color="#ff7f0e", markersize=5, label=f"Ajout bas ({cfg.extrapolation})")
+    if len(high_w) > 0:
+        ax.semilogx(high_w * scale_x, high_chi, "^", color="#2ca02c", markersize=5, label=f"Ajout haut ({cfg.extrapolation})")
+
+    # Points d'origine mis en évidence par-dessus.
+    ax.semilogx(omega * scale_x, chi, "o", color="#1f77b4", markersize=5, label="Points originaux")
+
+    ax.set_xlabel(x_label, fontsize=11)
+    ax.set_ylabel(comp_label, fontsize=11)
+    ax.set_title(f"Points originaux vs extrapolation ({cfg.extrapolation}) - {comp_label}", fontsize=12, fontweight="bold")
+    ax.grid(True, which="both", linestyle=":", alpha=0.7)
+    ax.legend(loc="best", framealpha=0.9)
+
+    plt.tight_layout()
+
+    if save_path is not None:
+        fig.savefig(save_path, dpi=200, bbox_inches="tight")
+    if show:
+        plt.show()
+
+    return fig
