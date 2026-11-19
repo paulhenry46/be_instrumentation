@@ -81,7 +81,7 @@ class NoiseConfig:
         Graine aléatoire pour la répétabilité des simulations.
     """
 
-    noise_type: Literal["none", "white", "flicker", "combined"] = "white"
+    noise_type: Literal["none", "white"] = "white"
     std_white: float = 0.05
     alpha_flicker: float = 1.0
     seed: int | None = None
