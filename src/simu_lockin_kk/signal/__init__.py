@@ -12,13 +12,11 @@ from simu_lockin_kk.signal.lockin import (
 )
 from simu_lockin_kk.signal.noise import (
     apply_noise,
-    generate_flicker_noise,
     generate_white_noise,
 )
 
 __all__ = [
     "generate_white_noise",
-    "generate_flicker_noise",
     "apply_noise",
     "LockInAmplifier",
     "demodulate_signal",

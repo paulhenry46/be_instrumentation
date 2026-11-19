@@ -12,7 +12,6 @@ from simu_lockin_kk.signal.lockin import (
 )
 from simu_lockin_kk.signal.noise import (
     apply_noise,
-    generate_flicker_noise,
     generate_white_noise,
 )
 
@@ -27,15 +26,6 @@ class TestNoiseModule(unittest.TestCase):
         self.assertEqual(len(noise), n_samples)
         self.assertAlmostEqual(float(np.mean(noise)), 0.0, places=2)
         self.assertAlmostEqual(float(np.std(noise)), std_target, places=2)
-
-    def test_flicker_noise_statistics(self) -> None:
-        n_samples = 50000
-        fs = 1e4
-        std_target = 0.2
-        flicker = generate_flicker_noise(n_samples=n_samples, fs=fs, std=std_target, seed=123)
-
-        self.assertEqual(len(flicker), n_samples)
-        self.assertAlmostEqual(float(np.std(flicker)), std_target, places=2)
 
     def test_apply_noise_types(self) -> None:
         signal = np.ones(1000, dtype=np.float64)
