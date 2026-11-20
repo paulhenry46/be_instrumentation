@@ -37,7 +37,7 @@ def generate_white_noise(
     if std < 0:
         raise ValueError(f"std doit être >= 0 (obtenu : {std}).")
 
-    # Instancie un générateur moderne PCG64 (recommandé en NumPy) avec graine optionnelle pour
+    # Instancie un générateur moderne  avec graine optionnelle pour
     # debugage.
     rng = np.random.default_rng(seed)
 

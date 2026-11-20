@@ -202,7 +202,7 @@ class SpectrumData:
 class KKConfig:
     """Configuration de l'intégration Kramers-Kronig par Valeur Principale de Cauchy."""
 
-    integration_method: Literal["cauchy_maclaurin", "hilbert", "trapezoidal_pv"] = "cauchy_maclaurin"
+    integration_method: Literal["cauchy_maclaurin", "trapezoidal_pv"] = "cauchy_maclaurin"
     singularity_eps: float = 1e-6
     extrapolation: Literal["none", "asymptotic", "constant"] = "asymptotic"
     omega_min_extrap: float | None = None

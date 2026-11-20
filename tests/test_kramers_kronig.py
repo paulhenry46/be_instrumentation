@@ -45,12 +45,6 @@ class TestKramersKronig(unittest.TestCase):
         rms_err = float(np.sqrt(np.mean((chi_orig_mid - chi_rec_mid) ** 2)))
         self.assertLess(rms_err, 0.03)  # Erreur RMS < 3 %
 
-    def test_hilbert_reconstruction(self) -> None:
-        """Vérifie la reconstruction basée sur la transformée de Hilbert via FFT."""
-        kk_cfg = KKConfig(integration_method="hilbert")
-        chi_real_rec = reconstruct_real_from_imag(self.spectrum.omega, self.spectrum.Y, kk_cfg=kk_cfg)
-        self.assertEqual(len(chi_real_rec), len(self.spectrum.omega))
-        self.assertTrue(np.all(np.isfinite(chi_real_rec)))
 
     def test_trapezoidal_pv(self) -> None:
         """Vérifie l'intégration VPC par exclusion de la fenêtre de singularité."""

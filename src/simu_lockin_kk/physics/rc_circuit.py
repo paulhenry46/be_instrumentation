@@ -2,7 +2,7 @@
 
 Ce module fournit les équations de réponse en fréquence complexe :
     H(w) = 1 / (1 + jwRC)
-ainsi que la simulation temporelle exacte pour une excitation sinusoïdale ou arbitraire,
+ainsi que la simulation temporelle exacte pour une excitation sinusoïdale,
 compatible avec l'injection de bruit.
 """
 
@@ -59,7 +59,7 @@ def compute_transfer_function(omega: np.ndarray | float, R: float, C: float) -> 
     return real_part + 1j * imag_part
 
 
-def compute_spectrum(config: RCCircuitConfig, freqs: np.ndarray | None = None) -> SpectrumData:
+def compute_spectrum(config: RCCircuitConfig, freqs: np.ndarray | None = None) -> SpectrumData: #TODO Why ?
     """Génère le spectre de fréquence théorique (SpectrumData) pour une configuration RC donnée.
 
     Parameters
@@ -102,7 +102,7 @@ def compute_spectrum(config: RCCircuitConfig, freqs: np.ndarray | None = None) -
     return SpectrumData.from_complex(freqs_arr, H_complex)
 
 
-def generate_time_response(
+def generate_time_response( #TODO Why ?
     config: RCCircuitConfig,
     f_ref: float,
     duration: float = 0.1,

@@ -325,7 +325,7 @@ def demodulate_sweep(
         # temporelle suffisamment longue.
         duration_point = max(duration, 5.0 / f)
 
-        # Simule le signal temporel du circuit RC à la fréquence f.
+        # Simule le signal temporel du circuit RC à la fréquence f. TODO Why ?
         time_data = generate_time_response(
             config=rc_config,
             f_ref=f,

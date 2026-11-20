@@ -1,7 +1,7 @@
 """Implémentation de la vérification des relations de Kramers-Kronig (KK).
 
 Utilise l'intégration en Valeur Principale de Cauchy (VPC) avec soustraction
-de la singularité (méthode de Maclaurin), la transformée de Hilbert ou l'exclusion de fenêtre.
+de la singularité (méthode de Maclaurin) ou l'exclusion de fenêtre.
 Gère l'extrapolation asymptotique pour limiter l'erreur de troncature sur borne finie.
 """
 
@@ -9,7 +9,6 @@ from typing import Literal
 import numpy as np
 from scipy.integrate import trapezoid 
 from scipy.interpolate import CubicSpline  # Interpolation spline cubique C2 pour grille uniforme
-from scipy.signal import hilbert 
 
 from simu_lockin_kk.config import KKConfig, KKResult, SpectrumData  # Paramètres et résultats KK
 
@@ -209,10 +208,6 @@ def reconstruct_real_from_imag(
     w_eval = np.asarray(omega, dtype=np.float64)
     w_int, chi_img_int = _extrapolate_spectrum(w_eval, chi_imag, extrap_type=kk_cfg.extrapolation)
 
-    # Cas 1 : transformée de Hilbert directe via FFT (rapide, mais besoin d' un pas uniforme).
-    if kk_cfg.integration_method == "hilbert":
-        analytic_sig = hilbert(chi_imag)
-        return np.real(analytic_sig)
 
     chi_real_rec = np.zeros_like(w_eval)
 
@@ -289,9 +284,6 @@ def reconstruct_imag_from_real(
     w_eval = np.asarray(omega, dtype=np.float64)
     w_int, chi_rl_int = _extrapolate_spectrum(w_eval, chi_real, extrap_type=kk_cfg.extrapolation)
 
-    if kk_cfg.integration_method == "hilbert":
-        analytic_sig = hilbert(chi_real)
-        return -np.imag(analytic_sig)
 
     chi_imag_rec = np.zeros_like(w_eval)
 
