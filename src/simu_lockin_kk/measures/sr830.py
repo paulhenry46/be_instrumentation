@@ -7,6 +7,8 @@ from numpy.typing import NDArray
 from pymeasure.adapters import SerialAdapter
 from pymeasure.instruments.srs import SR830
 
+from simu_lockin_kk.config import SpectrumData
+
 # Table des constantes de temps du SR830. Utilisé pour le filtre pass-bas de la fin, compromis à trouver, etc.
 SR830_TIME_CONSTANTS: tuple[float, ...] = (
     10e-6,
@@ -239,6 +241,84 @@ def sweep_frequencies(
       "lia_status": lia_status,
   }
 
+
+def sweep_to_spectrum_data(
+    sweep_data: dict[str, NDArray[np.float64] | NDArray[np.int64]],
+    *,
+    amplitude_v: float = 1.0,
+    normalize_by_amplitude: bool = True,
+    use_measured_freq: bool = True,
+) -> SpectrumData:
+  """Convertit les tableaux issus du balayge en objet SpectrumData.
+
+  Parameters
+  ----------
+  sweep_data : dict[str, NDArray[np.float64] | NDArray[np.int64]]
+      Dictionnaire renvoyé par sweep_frequencies.
+  amplitude_v : float, optional
+      Amplitude d'excitation en Volts utilisée pour normaliser X, Y
+      et R lorsque normalize_by_amplitude est True (1.0 par défaut).
+  normalize_by_amplitude : bool, optional
+      Si True, divise les composantes par amplitude_v pour obtenir une
+      réponse adimensionnelle comparable à H(w) (True par défaut).
+  use_measured_freq : bool, optional
+      Si True, utilise measured_freq_hz ; sinon utilise target_freq_hz
+      (True par défaut).
+
+  Returns
+  -------
+  SpectrumData
+      Objet spectral prêt pour l'analyse Kramers-Kronig.
+
+  Raises
+  ------
+  ValueError
+      Si amplitude_v est nul, négatif ou non fini, ou si les fréquences
+      ne sont pas triées de manière strictement croissante.
+  """
+  # amplitude de normalisation positive finie
+  if not np.isfinite(amplitude_v) or amplitude_v <= 0.0:
+    raise ValueError(
+        "amplitude_v doit être un nombre fini strictement positif."
+    )
+
+  freq_key = "measured_freq_hz" if use_measured_freq else "target_freq_hz"
+  freqs = np.asarray(sweep_data[freq_key], dtype=np.float64)
+
+  # Vérifie que les fréquences sont croissantes pour Kramers-Kronig!!!
+  if np.any(np.diff(freqs) <= 0.0):
+    raise ValueError(
+        "Les fréquences doivent être triées de manière strictement croissante"
+        " pour Kramers-Kronig."
+    )
+
+  # Calcule omega = 2pif
+  omega = 2.0 * np.pi * freqs
+
+  # Récupère X, Y, R (en Volts) et la phase (convertie des degrés vers les radians)
+  x_raw = np.asarray(sweep_data["x_v"], dtype=np.float64)
+  y_raw = np.asarray(sweep_data["y_v"], dtype=np.float64)
+  r_raw = np.asarray(sweep_data["r_v"], dtype=np.float64)
+  phase_rad = np.deg2rad(np.asarray(sweep_data["theta_deg"], dtype=np.float64))
+
+  # Applique éventuellement la normalisation par l'amplitude mesurée (à voir en pratique)
+  scale = amplitude_v if normalize_by_amplitude else 1.0
+  x_comp = x_raw / scale
+  y_comp = y_raw / scale
+  r_mag = r_raw / scale
+
+  # Reconstruit le spectre
+  h_complex = (x_comp + 1j * y_comp).astype(np.complex128) # = as en TS
+
+  return SpectrumData(
+      freqs=freqs,
+      omega=omega,
+      X=x_comp,
+      Y=y_comp,
+      R=r_mag,
+      phase=phase_rad,
+      H_complex=h_complex,
+  )
 
 def connect_sr830_serial(
     port: str = "/dev/ttyUSB0",# ATTENTION, valeur par défaut pour ma machine, peut changer, il faut bien penser à vérif le bon port!
