@@ -50,15 +50,15 @@ simu_lockin_kk/
 Le flux de données entre les différents maillons de la chaîne est strictement encapsulé dans des structures typées (`dataclass` ou `numpy.ndarray`).
 
 ```text
-  [ Générateur / Circuit RC ]  ---> (v_out(t), t, f_ref)
+         [ Circuit RC ] 
                |
                v
-    [ Amplificateur Lock-in ]  ---> (X(ω), Y(ω), ω)  <--- [ Données Expérimentales Réelles (io.py) ]
+           [ Lock-in ]  ---> (X(ω), Y(ω), ω)  <--- [ Données Expérimentales Réelles ]
                |                                                   |
                +-----------------------+---------------------------+
                                        |
                                        v
-                     [ Module Kramers-Kronig (VPC) ]  ---> (χ'_KK(ω), Erreur RMS)
+                     [ Module Kramers-Kronig ]  ---> résultat
 ```
 
 ### 3.1. Maillon 1 : Circuit RC (Physique & Signal Excité)
@@ -114,40 +114,9 @@ Le flux de données entre les différents maillons de la chaîne est strictement
   - `chi_real_clean` (`np.ndarray`) : Partie réelle mesurée et nettoyée.
   - `chi_imag_clean` (`np.ndarray`) : Partie imaginaire mesurée et nettoyée.
 
-## 4. Spécifications Physiques et Algorithmiques
-
-### 4.1. Modélisation du Circuit RC
-
-La fonction de transfert d'un circuit RC passe-bas s'écrit sous forme complexe :
-$$H(\omega) = \frac{1}{1 + j\omega RC} = \frac{1}{1 + (\omega RC)^2} - j \frac{\omega RC}{1 + (\omega RC)^2}$$
-
-La partie réelle $\chi'(\omega)$ et la partie imaginaire $\chi''(\omega)$ sont associées par :
-$$\chi'(\omega) = \frac{1}{1 + (\omega RC)^2}, \quad \chi''(\omega) = -\frac{\omega RC}{1 + (\omega RC)^2}$$
-
-### 4.2. Algorithme de Lock-in (PSD + LPF)
-
-1. **Multiplication par la référence** :
-   $$s_X(t) = v_{out}(t) \cdot \sqrt{2} \sin(\omega_0 t)$$
-   $$s_Y(t) = v_{out}(t) \cdot \sqrt{2} \cos(\omega_0 t)$$
-2. **Filtrage passe-bas** : Application d'un filtre numérique IIR (Butterworth d'ordre $N$) avec une fréquence de coupure $f_c \ll f_0$ pour isoler la composante continue :
-   $$X = \text{LPF}(s_X(t)), \quad Y = \text{LPF}(s_Y(t))$$
-
-### 4.3. Intégration par Valeur Principale de Cauchy (VPC)
-
-Les relations de Kramers-Kronig s'expriment sous la forme d'intégrales singulières :
-$$\chi'(\omega_0) = \frac{2}{\pi} \, P.V. \int_{0}^{\infty} \frac{\omega \, \chi''(\omega)}{\omega^2 - \omega_0^2} \, d\omega$$
-
-Pour gérer la singularité en $\omega = \omega_0$, l'algorithme met en œuvre la méthode de soustraction de la singularité (technique de Maclaurin) :
-$$P.V. \int_{0}^{\infty} \frac{\omega \, \chi''(\omega)}{\omega^2 - \omega_0^2} \, d\omega = \int_{0}^{\infty} \frac{\omega \chi''(\omega) - \omega_0 \chi''(\omega_0)}{\omega^2 - \omega_0^2} \, d\omega + \chi''(\omega_0) \ln\left|\frac{\omega_{max} - \omega_0}{\omega_{max} + \omega_0}\right|$$
-
-Pour les données expérimentales à domaine borné $[\omega_{min}, \omega_{max}]$, le module applique une extrapolation asymptotique en loi de puissance aux limites ($\omega \to 0$ et $\omega \to \infty$) afin de minimiser les erreurs de troncature bord.
-
-## 5. Standards de Développement et Qualité Code
+## 4. Standards de Développement et Qualité Code
 
 1. **PEP 8 & Formatting** : Formatage automatique strict via `ruff format` ou `black`.
 2. **Static Typing** : Utilisation de `mypy --strict` pour valider le typage explicite de chaque fonction.
 3. **Docstrings NumPy Format** : Chaque fonction/classe doit être documentée avec ses sections `Parameters`, `Returns`, et `Raises`.
-4. **Validation Pytest** :
-   - `test_rc_circuit.py` : Vérification du point $-3\text{ dB}$ ($\omega = 1/RC$).
-   - `test_lockin.py` : Vérification du rejet de bruit ($SNR < 0\text{ dB}$).
-   - `test_kramers_kronig.py` : Vérification de la reconstruction KK théorique avec une erreur RMS $< 1\%$.
+4. **Langue de code** : Compte tenu de la langue du client, les commentaires et Docstrings sont rédigées en français. Cependant, le code est écrit intégralement en anglais
