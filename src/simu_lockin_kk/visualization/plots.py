@@ -69,9 +69,9 @@ def plot_time_domain(
     ax.plot(t * 1e3, v_in, color="#1f77b4", linewidth=1.8, label="v_in")
     ax.plot(t * 1e3, v_clean, color="#2ca02c", linewidth=2.0, linestyle="--", label="v_out (théo)")
 
-    ax.set_xlabel("Temps t (ms)", fontsize=11)
-    ax.set_ylabel("Tension (V)", fontsize=11)
-    ax.set_title(f"Réponse temporelle du circuit RC (f_ref = {f_ref:.1f} Hz)", fontsize=12, fontweight="bold")
+    ax.set_xlabel("Temps t (ms)")
+    ax.set_ylabel("Tension (V)")
+    ax.set_title(f"Réponse temporelle du circuit RC (f_ref = {f_ref:.1f} Hz)")
     ax.grid(True, linestyle=":", alpha=0.7)
     ax.legend(loc="upper right", framealpha=0.9)
 
@@ -134,8 +134,8 @@ def plot_bode(
     # avec repère horizontal à -3.01 dB (atténuation en puissance de 1/2, gain en tension 1/sqrt(2)).
     ax_gain.semilogx(x_data, gain_db, color="#1f77b4", linewidth=2.0, label="Gain |H|")
     ax_gain.axhline(-3.01, color="r", linestyle="--", alpha=0.7, label="-3 dB")
-    ax_gain.set_ylabel("Gain (dB)", fontsize=11)
-    ax_gain.set_title("Diagramme de Bode", fontsize=12, fontweight="bold")
+    ax_gain.set_ylabel("Gain (dB)")
+    ax_gain.set_title("Diagramme de Bode")
     ax_gain.grid(True, which="both", linestyle=":", alpha=0.7)
     ax_gain.legend(loc="lower left")
 
@@ -143,8 +143,8 @@ def plot_bode(
     # caractéristique d'un filtre RC passe-bas du premier ordre à sa fréquence de coupure.
     ax_phase.semilogx(x_data, phase_deg, color="#ff7f0e", linewidth=2.0, label="Phase θ")
     ax_phase.axhline(-45.0, color="r", linestyle="--", alpha=0.7, label="-45° (Coupure)")
-    ax_phase.set_xlabel(x_label, fontsize=11)
-    ax_phase.set_ylabel("Phase (°)", fontsize=11)
+    ax_phase.set_xlabel(x_label)
+    ax_phase.set_ylabel("Phase (°)")
     ax_phase.grid(True, which="both", linestyle=":", alpha=0.7)
     ax_phase.legend(loc="lower left")
 
@@ -211,16 +211,16 @@ def plot_kramers_kronig_comparison(
         linewidth=2.0,
         label="Reconstruit KK",
     )
-    ax_main.set_ylabel(target_name, fontsize=11)
-    ax_main.set_title(f"Vérification des Relations de Kramers-Kronig - {target_name}", fontsize=12, fontweight="bold")
+    ax_main.set_ylabel(target_name)
+    ax_main.set_title(f"Vérification des Relations de Kramers-Kronig - {target_name}")
     ax_main.grid(True, which="both", linestyle=":", alpha=0.7)
     ax_main.legend(loc="best", framealpha=0.9)
 
     # Résidus, comme sur regressi
     ax_res.semilogx(x_data, result.residuals, color="#2ca02c", linewidth=1.5, label="Résidus Δ = Orig - KK")
     ax_res.axhline(0.0, color="black", linestyle="--", alpha=0.7)
-    ax_res.set_xlabel(x_label, fontsize=11)
-    ax_res.set_ylabel("Résidus Δ", fontsize=11)
+    ax_res.set_xlabel(x_label)
+    ax_res.set_ylabel("Résidus Δ")
     ax_res.grid(True, which="both", linestyle=":", alpha=0.7)
     ax_res.legend(loc="best")
 
@@ -345,11 +345,9 @@ def plot_extrapolation_comparison(
         label=f"Sans extrapolation (RMS={res_no_extrap.rms_error:.3e}, R²={res_no_extrap.r2_score:.4f})",
     )
 
-    ax_main.set_ylabel(target_name, fontsize=11)
+    ax_main.set_ylabel(target_name)
     ax_main.set_title(
         f"Effet de l'extrapolation sur Kramers-Kronig - {target_name}",
-        fontsize=12,
-        fontweight="bold",
     )
     ax_main.grid(True, which="both", linestyle=":", alpha=0.7)
     ax_main.legend(loc="best", framealpha=0.9)
@@ -360,8 +358,8 @@ def plot_extrapolation_comparison(
         x_data, res_no_extrap.residuals, "--", color="#d62728", linewidth=1.5, label="Résidus (sans extrap)"
     )
     ax_err.axhline(0.0, color="black", linestyle=":", alpha=0.7)
-    ax_err.set_xlabel(x_label, fontsize=11)
-    ax_err.set_ylabel("Résidus Δ", fontsize=11)
+    ax_err.set_xlabel(x_label)
+    ax_err.set_ylabel("Résidus Δ")
     ax_err.grid(True, which="both", linestyle=":", alpha=0.7)
     ax_err.legend(loc="best")
 
@@ -435,9 +433,9 @@ def plot_extrapolated_points(
     # Points d'origine mis en évidence par-dessus.
     ax.semilogx(omega * scale_x, chi, "o", color="#1f77b4", markersize=5, label="Points originaux")
 
-    ax.set_xlabel(x_label, fontsize=11)
-    ax.set_ylabel(comp_label, fontsize=11)
-    ax.set_title(f"Points originaux vs extrapolation ({cfg.extrapolation}) - {comp_label}", fontsize=12, fontweight="bold")
+    ax.set_xlabel(x_label)
+    ax.set_ylabel(comp_label)
+    ax.set_title(f"Points originaux vs extrapolation ({cfg.extrapolation}) - {comp_label}")
     ax.grid(True, which="both", linestyle=":", alpha=0.7)
     ax.legend(loc="best", framealpha=0.9)
 
@@ -507,11 +505,9 @@ def plot_methods_comparison(
         label=f"{label_b})",
     )
 
-    ax_main.set_ylabel(target_name, fontsize=11)
+    ax_main.set_ylabel(target_name)
     ax_main.set_title(
         f"Comparaison de deux méthodes KK ({label_a} vs {label_b}) - {target_name}",
-        fontsize=12,
-        fontweight="bold",
     )
     ax_main.grid(True, which="both", linestyle=":", alpha=0.7)
     ax_main.legend(loc="best", framealpha=0.9)
@@ -520,8 +516,8 @@ def plot_methods_comparison(
     ax_res.semilogx(x_data, res_a.residuals, "-", color="#d62728", linewidth=1.4, label=f"Résidus {label_a}")
     ax_res.semilogx(x_data, res_b.residuals, "--", color="#2ca02c", linewidth=1.4, label=f"Résidus {label_b}")
     ax_res.axhline(0.0, color="black", linestyle=":", alpha=0.7)
-    ax_res.set_xlabel(x_label, fontsize=11)
-    ax_res.set_ylabel("Résidus Δ", fontsize=11)
+    ax_res.set_xlabel(x_label)
+    ax_res.set_ylabel("Résidus Δ")
     ax_res.grid(True, which="both", linestyle=":", alpha=0.7)
     ax_res.legend(loc="best")
 
