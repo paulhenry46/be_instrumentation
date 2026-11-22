@@ -160,7 +160,7 @@ def plot_bode(
 
 # Rôle : compare la courbe originale et la reconstruction KK, puis affiche les résidus.
 # Retour : matplotlib.figure.Figure.
-# Pourquoi : contrôler visuellement et numériquement (RMS, R²) la validité Kramers-Kronig.
+# Pourquoi : contrôler visuellement la validité Kramers-Kronig.
 def plot_kramers_kronig_comparison(
     result: KKResult,
     use_omega: bool = True,
@@ -200,7 +200,7 @@ def plot_kramers_kronig_comparison(
         2, 1, figsize=(9, 7), sharex=True, gridspec_kw={"height_ratios": [3, 1]}, dpi=150
     )
 
-    # 1. Graphique principal : points discrets ("o") pour l'original et trait continu ("-")
+    # 1. Graphique principal : points pour l'original et trait 
     # pour la reconstruction KK
     ax_main.semilogx(x_data, result.chi_original, "o", color="#1f77b4", markersize=4, label="Mesuré / Original")
     ax_main.semilogx(
@@ -209,7 +209,7 @@ def plot_kramers_kronig_comparison(
         "-",
         color="#d62728",
         linewidth=2.0,
-        label=f"Reconstruit KK (RMS={result.rms_error:.3e}, R²={result.r2_score:.4f})",
+        label="Reconstruit KK",
     )
     ax_main.set_ylabel(target_name, fontsize=11)
     ax_main.set_title(f"Vérification des Relations de Kramers-Kronig - {target_name}", fontsize=12, fontweight="bold")
@@ -494,7 +494,7 @@ def plot_methods_comparison(
         "-",
         color="#d62728",
         linewidth=2.0,
-        label=f"{label_a} (RMS={res_a.rms_error:.3e}, R²={res_a.r2_score:.4f})",
+        label=f"{label_a})",
     )
 
     # Reconstruction par la méthode B (trait interrompu pour rester lisible en superposition).
@@ -504,7 +504,7 @@ def plot_methods_comparison(
         "--",
         color="#2ca02c",
         linewidth=2.0,
-        label=f"{label_b} (RMS={res_b.rms_error:.3e}, R²={res_b.r2_score:.4f})",
+        label=f"{label_b})",
     )
 
     ax_main.set_ylabel(target_name, fontsize=11)

@@ -71,40 +71,7 @@ def _apply_lpf(
         # Repli si le signal est plus court qu'une période (ou fs < f_ref) : garde tout le signal.
         sig = signal
 
-    if lpf_type == "butterworth":
-        # Fréquence de Nyquist (fs / 2), limite supérieure représentable sans repliement à fs.
-        nyquist = 0.5 * fs
-
-        # Normalise cutoff par rapport à nyquist (0.5 = fs/2) et plafonne à 0.49 pour rester
-        # strictement sous la limite d'échantillonnage et éviter toute instabilité numérique.
-        normal_cutoff = min(cutoff / nyquist, 0.49)
-
-        # Calcule les coefficients du filtre Butterworth passe-bas en sections d'ordre 2 (SOS),
-        # plus stables numériquement qu'une forme polynomiale (b, a) d'ordre élevé.
-        sos = butter(order, normal_cutoff, btype="low", output="sos")
-
-        # Estime la longueur minimale (~3 constantes de temps liées à cutoff) pour que la
-        # réponse du filtre s'établisse correctement.
-        min_samples_needed = int(np.ceil(3.0 * fs / cutoff))
-
-        # Si le signal est plus court que min_samples_needed, le répète périodiquement pour
-        # allonger la fenêtre et limiter les effets de bord lors du filtrage.
-        if len(sig) < min_samples_needed:
-            reps = int(np.ceil(min_samples_needed / len(sig)))
-            sig_ext = np.tile(sig, reps)
-        else:
-            sig_ext = sig
-
-        # Applique un filtrage avant-arrière (zero-phase) : annule le déphasage introduit par
-        # le filtre tout en doublant la pente effective (ordre 2 * order).
-        filtered = sosfiltfilt(sos, sig_ext)
-
-        # Calcule la moyenne sur les len(sig) derniers échantillons (fin du signal étendu,
-        # où le régime filtré est le plus stabilisé) pour obtenir la composante continue.
-        n_eval = max(1, len(sig))
-        return float(np.mean(filtered[-n_eval:]))
-
-    elif lpf_type == "moving_average":
+    if lpf_type == "moving_average":
         # Moyenne sur le signal (tronqué à un nombre entier de périodes si possible),
         # équivalente à une intégration/moyenne sur la fenêtre temporelle.
         return float(np.mean(sig))
