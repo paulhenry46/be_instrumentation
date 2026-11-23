@@ -148,6 +148,7 @@ def sweep_frequencies(
   if output_interface not in (0, 1):
     raise ValueError("output_interface doit valoir 0 (RS-232) ou 1 (GPIB).")
 
+  lia.write("*RST")
   # Dirige les réponses de l'appareil vers l'interface active (RS-232 ou GPIB)
   lia.write(f"OUTX {output_interface}")
 
@@ -183,7 +184,9 @@ def sweep_frequencies(
   aux_in_3_v = np.empty(n_points, dtype=np.float64)
   aux_in_4_v = np.empty(n_points, dtype=np.float64)
   lia_status = np.empty(n_points, dtype=np.int64)
-
+# conf usine    a remettre avec commande
+# liste des vérifs à éffectuer
+# on va plutot utiliser le port GBPI
   # Parcourt chaque fréquence cible du tableau
   for idx, freq_target in enumerate(freq_array):
     # Envoie la nouvelle fréquence de référence interne au SR830
@@ -240,6 +243,20 @@ def sweep_frequencies(
       "aux_in_4_v": aux_in_4_v,
       "lia_status": lia_status,
   }
+
+def test_sr830(
+    lia: SR830,
+    output_interface: int = 0,
+) -> dict[str, NDArray[np.float64] | NDArray[np.int64]]:
+  
+  if output_interface not in (0, 1):
+    raise ValueError("output_interface doit valoir 0 (RS-232) ou 1 (GPIB).")
+
+  lia.write("*RST")
+  # Dirige les réponses de l'appareil vers l'interface active (RS-232 ou GPIB)
+  lia.write(f"OUTX {output_interface}")
+  result = lia.ask("IDN?")
+  return result
 
 
 def sweep_to_spectrum_data(
